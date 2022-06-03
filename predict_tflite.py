@@ -66,16 +66,25 @@ if __name__ == '__main__':
 
     start_time = time.time()
     interpreter.invoke()
-    stop_time = time.time()
+    stop_time = time.time()-start_time
 
-    print(output_details)
     output_data = interpreter.get_tensor(output_details[0]['index'])
     results = np.squeeze(output_data)
 
     top_k = results.argsort()[-2:][::-1]
     labels = load_labels(args.label_file)
     for i in top_k:
-        if floating_model: print(f'{float(results[i]):08.6f}: {labels[i]}')
-        else: print(f'{float(results[i]/255.0):08.6f}: {labels[i]}')
+        if floating_model:
+            print(f'{float(results[i]):08.6f}: {labels[i]}')
+        else:
+            print(f'{float(results[i]/255.0):08.6f}: {labels[i]}')
 
-    print('time: {:.3f}ms'.format((stop_time-start_time)*1000))
+    print(f'time: {stop_time*1000:.2f}ms')
+
+
+# find output from this
+# output_data =  [{'name': 'StatefulPartitionedCall:1', 'index': 134, 'shape': array([ 1, 10], dtype=int32), 'shape_signature': array([ 1, 10], dtype=int32), 'dtype': <class 'numpy.float32'>, 'quantization': (0.0, 0), 'quantization_parameters': {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}, 'sparsity_parameters': {}},
+#                 {'name': 'StatefulPartitionedCall:3', 'index': 132, 'shape': array([ 1, 10,  4], dtype=int32), 'shape_signature': array([ 1, 10,  4], dtype=int32), 'dtype': <class 'numpy.float32'>, 'quantization': (0.0, 0), 'quantization_parameters': {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}, 'sparsity_parameters': {}},
+#                 {'name': 'StatefulPartitionedCall:0', 'index': 135, 'shape': array([1], dtype=int32), 'shape_signature': array([1], dtype=int32), 'dtype': <class 'numpy.float32'>, 'quantization': (0.0, 0), 'quantization_parameters': {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}, 'sparsity_parameters': {}},
+#                 {'name': 'StatefulPartitionedCall:2', 'index': 133, 'shape': array([ 1, 10], dtype=int32), 'shape_signature': array([ 1, 10], dtype=int32), 'dtype': <class 'numpy.float32'>, 'quantization': (0.0, 0), 'quantization_parameters': {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}, 'sparsity_parameters': {}}]
+
