@@ -11,7 +11,7 @@ from tensorflow.keras.preprocessing.image import img_to_array, load_img
 # from helper import path
 
 
-IMAGES_PATH = "./model/1651097056663.png"
+IMAGES_PATH = "model/3.png"
 MODEL_PATH = "./model/saved_model.pb"
 
 ap = argparse.ArgumentParser()
@@ -68,5 +68,5 @@ for imagePath in imagePaths:
 # # Check its architecture
 # model.summary()
 # # Predict model
-# model.predict("./model/1651097056663.png")
+# model.predict("./model/3.png")
 #

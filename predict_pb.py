@@ -7,7 +7,7 @@ model = tf.saved_model.load('./model/saved_model')
 # Check its architecture
 # model.summary()
 # Predict model
-# model.predict("./model/1651097056663.png")
+# model.predict("./model/3.png")
 a = 10
 
 # from tensorflow.python.platform import gfile
