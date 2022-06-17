@@ -53,12 +53,16 @@ cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(file)
 
 def crop_img(arr):
     new_arr = arr
-    # # side cut
     side = w//5
+    # # side cut
     new_arr[:, :side] = 0
     new_arr[:, w-side:] = 0
     # # top cut
     new_arr[:h//4, :] = 0
+
+    # lr, tb = w//4, h//4
+    # new_arr = new_arr[:, w//4:w-w//4]
+    # new_arr = new_arr[h//4:, :]
 
     return new_arr
 

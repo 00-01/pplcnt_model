@@ -24,6 +24,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/model/v1.2/output.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/v1.2_train.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

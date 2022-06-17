@@ -18,12 +18,6 @@ min, mid, max = 0, 128, 255
 def crop_img(arr):
     new_arr = arr
     lr, tb = w//4, h//4
-    # ## side cut
-    # new_arr[:, :lr] = 0
-    # new_arr[:, w-lr:] = 0
-    # ## top cut
-    # new_arr[:tb, :] = 0
-
     new_arr = new_arr[: , w//4:w-w//4]
     new_arr = new_arr[h//4: , :]
 
