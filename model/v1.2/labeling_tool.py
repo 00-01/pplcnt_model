@@ -4,7 +4,6 @@ from glob import glob
 # from pprint import pprint
 from tkinter import *
 from tkinter import filedialog, messagebox
-# import pyautogui
 
 # import cv2
 # import numpy as np
@@ -14,12 +13,10 @@ from PIL import Image, ImageTk
 
 
 win = Tk()
-win.title("ppcnt_labeler")
+win.title(f"labeler")
 win.geometry("1604x1000")
 
-panelA, panelB = None, None
 i, j = 0, 0
-
 h, w = 80, 80
 min, mid, max = 0, 128, 255
 error = 239
@@ -67,8 +64,7 @@ def convert_to_format():
 
 
 def show_images(image_list):
-    global panelA, panelB
-
+    # global image1, image2
     image1 = Image.open(image_list[1])
     image1_arr = np.array(image1, int)
     image1 = image1.resize((800, 800))
@@ -83,27 +79,15 @@ def show_images(image_list):
     e2 = image2_arr[image2_arr > 239]
     er1, er2 = len(e1), len(e2)
 
+    panelA.configure(image=image1)
+    panelA.image1 = image1
+    panelB.configure(image=image2)
+    panelB.image2 = image2
+
     if er1 < 512 or er2 < 512:
-        # result = img1_minus_img2(im1_arr, im2_arr)
-
-        if panelA is None or panelB is None:
-            panelA = Label(image=image1)
-            panelA.image1 = image1
-            panelA.grid(row=1, column=0, rowspan=1, columnspan=1)
-
-            panelB = Label(image=image2)
-            panelB.image2 = image2
-            panelB.grid(row=1, column=1, rowspan=1, columnspan=1)
-        else:
-            panelA.configure(image=image1)
-            panelA.image1 = image1
-
-            panelB.configure(image=image2)
-            panelB.image2 = image2
+        return 1
     else:
-        # pyautogui.press("enter")
         return 0
-    return 1
 
 
 def print_label_on_entry():
@@ -111,7 +95,7 @@ def print_label_on_entry():
 
 ################################################################ EVENT
 
-def select_folder():
+def open_foler():
     global images
     path = filedialog.askdirectory()
 
@@ -121,9 +105,10 @@ def select_folder():
     images = sorted(images)
 
 
-def select_label():
+def open_csv():
     global images
     file = filedialog.askopenfile()
+    win.title(f"{file.name}")
     images = pd.read_csv(file)
     # convert_to_format()
 
@@ -140,36 +125,31 @@ def save():
 
 def change(e, idx):
     global i
-    cnt = count.get()
-    images.iloc[i,3] = cnt
     clear()
     i += idx
+    image1_text.set(f"{images.iloc[i, 1]}")
+    image2_text.set(f"{images.iloc[i, 0]}")
+    count_text.set(f"{images.iloc[i, 3]}")
     try:
         if show_images(images.iloc[i]):
-            image1_text.set(f"{images.iloc[i,1]}")
-            image2_text.set(f"{images.iloc[i,0]}")
+            count_text.set(f"{images.iloc[i, 3]}")
             index.insert(0, i)
-            count.insert(0, images.iloc[i,3])
             previous.insert(0, images.iloc[i,2])
-            # print(f"{i} / {images.iloc[i,3]} / {cnt}")
         else:
-            images.iloc[i,3] = '-'
+            images.iloc[i,3] = 999
             index.insert(0, f"{i} : ERROR!!!")
-            count.insert(0, images.iloc[i,3])
-            # print(f"{i} / {images.iloc[i,3]}")
+        # print(f"{i} / {images.iloc[i,3]}")
     except IndexError:
         print(f"{i}, finished")
         i -= idx
 
 
 def clear():
+    # global count
+    count_text.set(0)
     index.delete(0, END)
-    count.delete(0, END)
+    # count.delete(0, END)
     previous.delete(0, END)
-
-
-def close_win(e):
-    win.destroy()
 
 
 def set(e, idx=0):
@@ -178,54 +158,75 @@ def set(e, idx=0):
     change(e, idx)
 
 
+def increase(e):
+    count_text.set(count_text.get()+1)
+
+
+def decrease(e):
+    count_text.set(count_text.get()-1)
+
+
 def next(e, idx=1):
+    cnt = int(count_text.get())
+    images.iloc[i, 3] = cnt
+    images['count'] = images['count'].astype(int)
     change(e, idx)
 
 
 def prev(e, idx=-1):
+    cnt = int(count_text.get())
+    images.iloc[i, 3] = cnt
+    images['count'] = images['count'].astype(int)
     change(e, idx)
+
+
+def close_win(e):
+    win.destroy()
 
 ################################################################ TEXT
 
 image1_text = StringVar()
-image1_text.set("-")
-
+image1_text.set('')
 image2_text = StringVar()
-image2_text.set("-")
-
-################################################################ LABEL
+image2_text.set('')
+count_text = IntVar()
+count_text.set(0)
 
 label0 = Label(win, textvariable=image1_text)
 label1 = Label(win, textvariable=image2_text)
 label2 = Label(win, text="previous: ", padx=20, pady=10)
-
-################################################################ ENTRY
+panelA = Label(win)
+panelB = Label(win)
 
 index = Entry(win, width=10, borderwidth=3, bg="yellow")
-count = Entry(win, width=10, borderwidth=3, bg="white")
 previous = Entry(win, width=10, borderwidth=3, bg="white")
 
-################################################################ BUUTON
-
-select_folder_button = Button(win, text="select folder", command=select_folder)
-select_label_button = Button(win, text="select csv_file", command=select_label)
-
+open_folder_button = Button(win, text="select folder", command=open_foler)
+open_csv_button = Button(win, text="select csv_file", command=open_csv)
 save = Button(win, text="Save", bg='red', fg='blue', padx=10, pady=10, command=save)
+
+count = Label(win, textvariable=count_text)
 
 ################################################################ GRID
 
-select_folder_button.grid(row=5, column=0, rowspan=1, columnspan=1)
-select_label_button.grid(row=6, column=0, rowspan=1, columnspan=1)
-
 label0.grid(row=0, column=0, rowspan=1, columnspan=1)
 label1.grid(row=0, column=1, rowspan=1, columnspan=1)
-label2.grid(row=3, column=1, rowspan=1, columnspan=1)
 
-index.grid(row=3, column=0, rowspan=1, columnspan=1)
-count.grid(row=4, column=0, rowspan=1, columnspan=1)
-previous.grid(row=4, column=1, rowspan=1, columnspan=1)
+panelA.grid(row=1, column=0, rowspan=1, columnspan=1)
+panelB.grid(row=1, column=1, rowspan=1, columnspan=1)
 
-save.grid(row=6, column=1, rowspan=1, columnspan=1)
+index.grid(row=2, column=0, rowspan=1, columnspan=1)
+label2.grid(row=2, column=1, rowspan=1, columnspan=1)
+
+count.grid(row=3, column=0, rowspan=1, columnspan=1)
+previous.grid(row=3, column=1, rowspan=1, columnspan=1)
+
+open_csv_button.grid(row=5, column=0, rowspan=1, columnspan=1)
+save.grid(row=5, column=1, rowspan=1, columnspan=1)
+
+open_folder_button.grid(row=6, column=0, rowspan=1, columnspan=1)
+
+# lbl_value.grid(row=6, column=1)
 
 ################################################################ BIND
 
@@ -234,6 +235,9 @@ win.bind('<Return>', set)
 
 win.bind('<Right>', next)
 win.bind('<Left>', prev)
+
+win.bind('<Up>', increase)
+win.bind('<Down>', decrease)
 
 win.bind('<Escape>', close_win)
 
