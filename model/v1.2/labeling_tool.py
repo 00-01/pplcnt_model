@@ -63,6 +63,17 @@ def convert_to_format():
     images["count"] = ""
 
 
+def find_ir_error(arr1, arr2):
+    e1 = arr1[arr1 > 239]
+    e2 = arr2[arr2 > 239]
+    er1, er2 = len(e1), len(e2)
+
+    if er1 < 512 or er2 < 512:
+        return 1  # TRUE
+    else:
+        return 0  # FALSE
+
+
 def show_images(image_list):
     # global image1, image2
     image1 = Image.open(image_list[1])
@@ -75,23 +86,13 @@ def show_images(image_list):
     image2 = image2.resize((800, 800))
     image2 = ImageTk.PhotoImage(image2)
 
-    e1 = image1_arr[image1_arr > 239]
-    e2 = image2_arr[image2_arr > 239]
-    er1, er2 = len(e1), len(e2)
-
     panelA.configure(image=image1)
     panelA.image1 = image1
     panelB.configure(image=image2)
     panelB.image2 = image2
 
-    if er1 < 512 or er2 < 512:
-        return 1
-    else:
-        return 0
-
-
-def print_label_on_entry():
-    pass
+    num = find_ir_error(image1_arr, image2_arr)
+    return num
 
 ################################################################ EVENT
 
@@ -101,54 +102,50 @@ def open_foler():
 
     ir_list = glob(f"{path}/*.png", recursive=False)
     rgb_list = glob(f"{path}/*.jpg", recursive=False)
-    images = ir_list+rgb_list
-    images = sorted(images)
+    ir_li = sorted(ir_list)
+    rgb_li = sorted(rgb_list)
+    images = pd.DataFrame(list(zip(ir_li, rgb_li)), columns=['ir', 'rgb'])
+    images['cnt'] = 0
+    images['count'] = 0
 
 
 def open_csv():
     global images
     file = filedialog.askopenfile()
+
     win.title(f"{file.name}")
     images = pd.read_csv(file)
     # convert_to_format()
-
-
-def save():
-    images.to_csv(f"label_{i}.csv", index=False)
-    # img = images.values.tolist()
-    # with open(f"label_{i}.csv", "w") as f:
-    #     Writer = csv.writer(f)
-    #     Writer.writerow(["ir", "rgb", "previous", "count"])
-    #     Writer.writerows(img)
-    messagebox.showinfo("Information", "saved succesfully")
 
 
 def change(e, idx):
     global i
     clear()
     i += idx
-    image1_text.set(f"{images.iloc[i, 1]}")
-    image2_text.set(f"{images.iloc[i, 0]}")
-    count_text.set(f"{images.iloc[i, 3]}")
+    image1_text.set(f"{images.iloc[i,1]}")
+    image2_text.set(f"{images.iloc[i,0]}")
     try:
         if show_images(images.iloc[i]):
-            count_text.set(f"{images.iloc[i, 3]}")
             index.insert(0, i)
-            previous.insert(0, images.iloc[i,2])
         else:
-            images.iloc[i,3] = 999
+            images.iloc[i,3] = -1
             index.insert(0, f"{i} : ERROR!!!")
-        # print(f"{i} / {images.iloc[i,3]}")
     except IndexError:
         print(f"{i}, finished")
         i -= idx
+        save()
+    count_text.set(f"{images.iloc[i, 3]}")
+    previous.insert(0, images.iloc[i, 2])
+
+
+def save():
+    images.to_csv(f"label_{i}.csv", index=False)
+    messagebox.showinfo("Information", "saved succesfully")
 
 
 def clear():
-    # global count
     count_text.set(0)
     index.delete(0, END)
-    # count.delete(0, END)
     previous.delete(0, END)
 
 
@@ -221,12 +218,10 @@ label2.grid(row=2, column=1, rowspan=1, columnspan=1)
 count.grid(row=3, column=0, rowspan=1, columnspan=1)
 previous.grid(row=3, column=1, rowspan=1, columnspan=1)
 
-open_csv_button.grid(row=5, column=0, rowspan=1, columnspan=1)
-save.grid(row=5, column=1, rowspan=1, columnspan=1)
+open_csv_button.grid(row=4, column=0, rowspan=1, columnspan=1)
+save.grid(row=4, column=1, rowspan=1, columnspan=1)
 
-open_folder_button.grid(row=6, column=0, rowspan=1, columnspan=1)
-
-# lbl_value.grid(row=6, column=1)
+open_folder_button.grid(row=5, column=0, rowspan=1, columnspan=1)
 
 ################################################################ BIND
 
