@@ -75,7 +75,7 @@ def find_ir_error(arr1, arr2):
 
 
 def show_images(image_list):
-    # global image1, image2
+    # global i#, image1, image2
     image1 = Image.open(image_list[1])
     image1_arr = np.array(image1, int)
     image1 = image1.resize((800, 800))
@@ -129,8 +129,12 @@ def change(e, idx):
             index.insert(0, i)
         else:
             images.iloc[i,3] = -1
-            index.insert(0, f"{i} : ERROR!!!")
-    except IndexError:
+            index.insert(0, f"{i}: ERROR!")
+    except FileNotFoundError as E0:
+        print(E0)
+        images.iloc[i, 3] = -2
+    except IndexError as E1:
+        print(E1)
         print(f"{i}, finished")
         i -= idx
         save()
@@ -163,17 +167,18 @@ def decrease(e):
     count_text.set(count_text.get()-1)
 
 
-def next(e, idx=1):
-    cnt = int(count_text.get())
+def get_count():
+    cnt = count_text.get()
     images.iloc[i, 3] = cnt
     images['count'] = images['count'].astype(int)
+
+def next(e, idx=1):
+    get_count()
     change(e, idx)
 
 
 def prev(e, idx=-1):
-    cnt = int(count_text.get())
-    images.iloc[i, 3] = cnt
-    images['count'] = images['count'].astype(int)
+    get_count()
     change(e, idx)
 
 
