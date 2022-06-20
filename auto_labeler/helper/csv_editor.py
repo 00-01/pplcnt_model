@@ -3,7 +3,7 @@ from csv import reader
 
 
 
-input = "/media/z/0/MVPC10/DATA/device_03/output.csv"
+input = "/media/z/0/MVPC10/DATA/device_03/v1.2_label_10.csv"
 output = "/media/z/0/MVPC10/DATA/device_03/output1.csv"
 
 def add_column_in_csv(input_file, output_file, transform_row):

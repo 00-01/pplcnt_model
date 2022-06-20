@@ -24,7 +24,28 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/model/v1.2/output.csv">
+        <entry key="/model/v1.2/label_-1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/label_335.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/label_400.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/output_306.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
