@@ -1,33 +1,40 @@
 # import csv
-from glob import glob
 # import os
+from glob import glob
 from tkinter import *
 from tkinter import filedialog, messagebox
+import traceback
 
-# import cv2
+import cv2
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageTk
 
 
-win = Tk()
-win.title(f"labeler")
-win.geometry("1604x1000")
+BG = 1
 
-i, j = 0, 0
 h, w = 80, 80
 min, mid, max = 0, 128, 255
 error = 239
+cnt_thresh = 1
+i, j = 0, 0
+bgq = []
+bgq_length = 10
+# bgs = np.zeros([80, 80], dtype=int)
+
+win = Tk()
+win.title(f"labeler")
+win.geometry("1604x1000")
 
 ################################################################ FUNCTION
 
 def crop_img(arr):
     new_arr = arr
-    lr, tb = w//4, h//4
-    croped_arr = new_arr[:, w//4:w-w//4]
-    croped_arr = croped_arr[h//4:, :]
+    # lr, tb = w//4, h//4
+    new_arr = new_arr[:, w//4:w-w//4]
+    new_arr = new_arr[h//4:, :]
 
-    return croped_arr
+    return new_arr
 
 
 def img1_minus_img2(img1, img2):
@@ -44,10 +51,50 @@ def img1_minus_img2(img1, img2):
     return result
 
 
-# def minus_mask_finder(img1_cnt, img2_cnt):
-#     if img1_cnt == 0:
-#         prev = img1_path
-        # prev_cnt = img1_cnt
+def bg_maker(target):
+    bg = np.zeros([80, 80], dtype=int)
+    for i in bgq:
+        bg += i
+    bg //= len(bgq)
+
+    img = target-bg
+
+    img = crop_img(img)
+
+    ## filters
+    # img = np.round_(255-(img2+255))  # inverse
+    img -= img.min()
+    # img *= 255//img.max()
+    # img -= -50
+    # img *= 255//50
+    # img[img < 10] = 0  # low cut
+
+    result = img.astype(np.uint8)  # dtype to uint8
+    bg_img = Image.fromarray(result)
+
+    return bg_img
+
+
+def show_bg(img, cnt):
+    global bgq
+    img_arr = np.array(img, int)
+    error = img_arr[img_arr > 239]
+    if len(error) > 512:  return 0  ## filter error img
+
+    # result = img1_minus_img2(img_arr)
+
+    if len(bgq) == bgq_length:
+        bg = bg_maker(img_arr)
+        # TODO: model goes here
+        if cnt < cnt_thresh:
+            bgq.insert(0, img_arr)
+            bgq.pop(-1)
+    else:
+        if cnt < cnt_thresh:
+            bgq.insert(0, img_arr)
+            bg = bg_maker(img_arr)
+
+    return bg
 
 
 def convert_to_format():
@@ -61,7 +108,10 @@ def convert_to_format():
     images["count"] = ""
 
 
-def find_ir_error(arr1, arr2):
+def find_ir_error(img1, img2):
+    arr1 = np.array(img1, int)
+    arr2 = np.array(img2, int)
+
     e1 = arr1[arr1 > 239]
     e2 = arr2[arr2 > 239]
     er1, er2 = len(e1), len(e2)
@@ -73,23 +123,25 @@ def find_ir_error(arr1, arr2):
 
 
 def show_images(image_list):
-    # global i#, image1, image2
-    image1 = Image.open(image_list[1])
-    image1_arr = np.array(image1, int)
-    image1 = image1.resize((800, 800))
-    image1 = ImageTk.PhotoImage(image1)
+    ir, rgb, auto_cnt, cnt = image_list[0], image_list[1], image_list[2], image_list[3]
 
-    image2 = Image.open(image_list[0])
-    image2_arr = np.array(image2, int)
-    image2 = image2.resize((800, 800))
-    image2 = ImageTk.PhotoImage(image2)
+    image1 = Image.open(rgb)
+    image2 = Image.open(ir)
 
-    panelA.configure(image=image1)
-    panelA.image1 = image1
-    panelB.configure(image=image2)
-    panelB.image2 = image2
+    if BG == 1:
+        bg = show_bg(image2, auto_cnt)
+        image1 = bg
 
-    num = find_ir_error(image1_arr, image2_arr)
+    image11 = image1.resize((800, 800))
+    image111 = ImageTk.PhotoImage(image11)
+    image22 = image2.resize((800, 800))
+    image222 = ImageTk.PhotoImage(image22)
+    panelA.configure(image=image111)
+    panelA.image111 = image111
+    panelB.configure(image=image222)
+    panelB.image222 = image222
+
+    num = find_ir_error(image1, image2)
     return num
 
 ################################################################ EVENT
@@ -120,24 +172,32 @@ def change(e, idx):
     global i
     clear()
     i += idx
-    image1_text.set(f"{images.iloc[i,1]}")
-    image2_text.set(f"{images.iloc[i,0]}")
+
+    row = images.iloc[i]
+    ir, rgb, auto_cnt, cnt = images.iloc[i,0], images.iloc[i,1], images.iloc[i,2], images.iloc[i,3]
+
+    image1_text.set(f"{rgb}")
+    image2_text.set(f"{ir}")
     try:
-        if show_images(images.iloc[i]):
+        if show_images(row):
             index.insert(0, i)
         else:
-            images.iloc[i,3] = -1
+            cnt = -1
             index.insert(0, f"{i}: ERROR!")
-    except FileNotFoundError as E0:
-        print(E0)
-        images.iloc[i, 3] = -2
-    except IndexError as E1:
-        print(E1)
-        print(f"{i}, finished")
+    except FileNotFoundError as FE:
+        print(f"{FE}: {i}")
+        traceback.print_exc()
+        cnt = -2
+    except IndexError as IE:
+        print(f"{IE}: {i}, FINISHED")
+        traceback.print_exc()
         i -= idx
-        save()
-    count_text.set(f"{images.iloc[i, 3]}")
-    previous.insert(0, images.iloc[i, 2])
+        # save()
+    except TypeError as TE:
+        print(f"{TE}: {i}")
+        traceback.print_exc()
+    count_text.set(f"{cnt}")
+    previous.insert(0, auto_cnt)
 
 
 def save():
@@ -194,18 +254,17 @@ count_text.set(0)
 
 label0 = Label(win, textvariable=image1_text)
 label1 = Label(win, textvariable=image2_text)
-label2 = Label(win, text="previous: ", padx=20, pady=10)
 panelA = Label(win)
 panelB = Label(win)
-
-index = Entry(win, width=10, borderwidth=3, bg="yellow")
-previous = Entry(win, width=10, borderwidth=3, bg="white")
-
-open_folder_button = Button(win, text="select folder", command=open_foler)
-open_csv_button = Button(win, text="select csv_file", command=open_csv)
-save = Button(win, text="Save", bg='red', fg='blue', padx=10, pady=10, command=save)
-
+label2 = Label(win, text="previous: ", padx=20, pady=10)
 count = Label(win, textvariable=count_text)
+
+index = Entry(win, width=10, justify='center', borderwidth=3, bg="yellow")
+previous = Entry(win, width=10, justify='center', borderwidth=3, bg="white")
+
+open_csv_button = Button(win, text="select csv_file", command=open_csv)
+open_folder_button = Button(win, text="select folder", command=open_foler)
+save = Button(win, text="Save", bg='red', fg='blue', padx=10, pady=10, command=save)
 
 ################################################################ GRID
 
@@ -228,7 +287,6 @@ open_folder_button.grid(row=5, column=0, rowspan=1, columnspan=1)
 
 ################################################################ BIND
 
-# win.bind('<BackSpace>', prev)
 win.bind('<Return>', set)
 
 win.bind('<Right>', next)
@@ -242,3 +300,8 @@ win.bind('<Escape>', close_win)
 ################################################################
 
 win.mainloop()
+
+# TODO 1.put empty template images in queue
+# TODO 2.cosine distance to find the closest template
+# TODO 3.use 2 to subtract from now data
+
