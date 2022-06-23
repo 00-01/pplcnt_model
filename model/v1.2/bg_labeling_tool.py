@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox
 import traceback
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageTk
@@ -19,8 +20,7 @@ error = 239
 cnt_thresh = 1
 i, j = 0, 0
 bgq = []
-bgq_length = 10
-# bgs = np.zeros([80, 80], dtype=int)
+bgq_length = 30
 
 win = Tk()
 win.title(f"labeler")
@@ -28,27 +28,32 @@ win.geometry("1604x1000")
 
 ################################################################ FUNCTION
 
+def histogramer(img):
+    im = img.flatten()
+    counts, bins = np.histogram(im, range=(0,255))
+    # plot histogram centered on values 0..255
+    # plt.bar(bins[:-1]-0.5, counts, width=1, edgecolor='none')
+    plt.bar(bins[:-1]-0.5, counts, width=1, edgecolor='none')
+    # plt.xlim([-0.5, 255.5])
+    # plt.hist(im, 32, histtype='bar')
+    plt.show()
+
+
 def crop_img(arr):
     new_arr = arr
+    X, Y = 40, 79
+    a, b = 3.3, 7.9
+    Radius = 8
+    for x in range(80):
+        for y in range(80):
+            if (((X-x)**2)/a**2)+(((Y-y)**2)/b**2) > Radius**2:
+                new_arr[y, x] = 0
+
     # lr, tb = w//4, h//4
-    new_arr = new_arr[:, w//4:w-w//4]
+    new_arr = new_arr[:, w//5:w-w//5]
     new_arr = new_arr[h//4:, :]
 
     return new_arr
-
-
-def img1_minus_img2(img1, img2):
-    # img3 = np.round_(255-((img1_arr-img2_arr)+255)/2).astype(np.uint8)
-    img_dist = img1-img2
-
-    img_dist = crop_img(img_dist)
-
-    img_norm = np.round_(255-(img_dist+255))  # inverse
-    img_norm[img_norm < 15] = 0  # low cut
-
-    result = img_norm.astype(np.uint8)  # dtype to uint8
-
-    return result
 
 
 def bg_maker(target):
@@ -57,19 +62,29 @@ def bg_maker(target):
         bg += i
     bg //= len(bgq)
 
+    # img1 = np.copy(target)
     img = target-bg
 
     img = crop_img(img)
+    # thresh = 30
+    # img[img < thresh] = 0
+    # img[img > thresh] = 1
+    # img = img1 * img
 
-    ## filters
-    # img = np.round_(255-(img2+255))  # inverse
-    img -= img.min()
-    # img *= 255//img.max()
-    # img -= -50
-    # img *= 255//50
-    # img[img < 10] = 0  # low cut
+    # histogramer(img)
+    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(2,2))
+    # img = clahe.apply(img)
 
-    result = img.astype(np.uint8)  # dtype to uint8
+    img = np.round(img)
+
+    img[img < 5] = 0
+    img[img > 223] = 0
+    # img -= img.min()
+    # img = img * 255/img.max()
+    img = np.round(img)
+    img = img.astype(int)
+
+    result = img.astype(np.uint8)
     bg_img = Image.fromarray(result)
 
     return bg_img
@@ -78,21 +93,18 @@ def bg_maker(target):
 def show_bg(img, cnt):
     global bgq
     img_arr = np.array(img, int)
-    error = img_arr[img_arr > 239]
-    if len(error) > 512:  return 0  ## filter error img
 
-    # result = img1_minus_img2(img_arr)
+    error1 = len(img_arr[img_arr > 239])
+    error2 = len(img_arr[img_arr < 1])
+    if error1 > 512 or error2 > 256:
+        print(f"{i}: white-{error1}, black-{error2}")
+        return 0
 
-    if len(bgq) == bgq_length:
-        bg = bg_maker(img_arr)
-        # TODO: model goes here
-        if cnt < cnt_thresh:
-            bgq.insert(0, img_arr)
-            bgq.pop(-1)
-    else:
-        if cnt < cnt_thresh:
-            bgq.insert(0, img_arr)
-            bg = bg_maker(img_arr)
+    bgq.insert(0, img_arr)
+    if len(bgq) > bgq_length:  bgq.pop(-1)
+    else:  pass
+
+    bg = bg_maker(img_arr)
 
     return bg
 
@@ -131,6 +143,11 @@ def show_images(image_list):
     if BG == 1:
         bg = show_bg(image2, auto_cnt)
         image1 = bg
+
+    image2 = np.array(image2, int)
+    image2 = crop_img(image2)
+    image2 = image2.astype(np.uint8)
+    image2 = Image.fromarray(image2)
 
     image11 = image1.resize((800, 800))
     image111 = ImageTk.PhotoImage(image11)
