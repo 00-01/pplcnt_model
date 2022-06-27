@@ -28,10 +28,13 @@ from tensorflow.python.ops.confusion_matrix import confusion_matrix
 ################################ DATA ################################
 
 DEBUG = 1
+SAVE = 0
 
-BATCH = 64
-EPOCH = 1000
+BATCH = 256
+EPOCH = 256
+ES = 128
 
+MIN, MAX = 0, 255
 CLASS = [0, 1]
 
 ################################################################ SETUP
@@ -173,16 +176,14 @@ label = label.reshape(label.shape[0], 1)
 
 ################################################################ PRE-PROCESS DATA
 
-# ## Nomalize
-# print(light_data[100:110])
-# mx = light_data.max()
-# norm_data = light_data/mx
-# # print(norm_data.shape)
-# print(norm_data[100:110])
+## Nomalize
+log(data[100:110])
+norm_data = data/MAX
+log(norm_data[100:110])
 
 ## Split
 split = int(len(label)*0.9)
-train_data, test_data = data[:split], data[split:]
+train_data, test_data = norm_data[:split], norm_data[split:]
 train_label, test_label = label[:split], label[split:]
 
 #######################################################################
@@ -194,29 +195,28 @@ train_label, test_label = label[:split], label[split:]
 
 ################################################################ BUILD
 
-input = Input(batch_shape=BATCH, shape=(H, W, 1))
+input = Input(shape=(H, W, 1))
 
 x = Conv2D(128, (3,3))(input)
 x = BatchNormalization()(x)
 x = Activation('selu')(x)
-x = Dropout(.2)(x)
+x = Dropout(.1)(x)
 
 x = Conv2D(64, (3, 3))(x)
 x = BatchNormalization()(x)
 x = Activation('selu')(x)
-x = Dropout(.2)(x)
+x = Dropout(.1)(x)
 
 x = Conv2D(32, (3, 3))(x)
 x = BatchNormalization()(x)
 x = Activation('selu')(x)
-x = Dropout(.2)(x)
+x = Dropout(.1)(x)
 
 x = Flatten()(x)
 
 x = Dense(256, activation="selu")(x)
 x = Dense(128, activation="selu")(x)
 x = Dense(64, activation="selu")(x)
-x = Dense(32, activation="selu")(x)
 
 output = Dense(24, activation="softmax")(x)
 
@@ -231,7 +231,7 @@ model.summary()
 ## fit
 log_path = "logs/"+datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = k.callbacks.TensorBoard(log_dir=log_path, histogram_freq=1)
-es = EarlyStopping(monitor="val_loss", patience=10, mode="auto", verbose=2)
+es = EarlyStopping(monitor="val_loss", patience=ES, mode="auto", verbose=2)
 
 history = model.fit(train_data, train_label, validation_split=0.1, batch_size=BATCH, epochs=EPOCH, verbose=1, callbacks=[es])  # callbacks=[es, tensorboard_callback])
 print(history)
@@ -256,5 +256,13 @@ predicted = np.argmax(predict, axis=1)
 # x = label_binarize(predicted, classes=classes)
 # y = label_binarize(y_test, classes=classes)
 # draw_ROC_AUC(x, y, CLASS)
+
+################################################################ SAVE
+
+if SAVE == 1:
+    file_name =  "model/light_detector_" + dt.now().strftime("%Y%m%d-%H%M%S")
+    model_format = ".h5"
+    model_name = file_name + model_format
+    model.save(model_name)
 
 ########################################################################
