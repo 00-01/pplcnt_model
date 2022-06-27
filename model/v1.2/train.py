@@ -11,6 +11,7 @@ import pandas as pd
 from PIL import Image
 import seaborn as sns
 from sklearn import metrics
+from sklearn.preprocessing import label_binarize
 import tensorflow as tf
 import tensorflow.keras as k
 from tensorflow.python.keras.callbacks import EarlyStopping
@@ -243,8 +244,8 @@ predicted = np.argmax(predict, axis=1)
 draw_CM(test_label, predicted)
 
 ## ROC, AUC
-x = label_binarize(predicted, classes=classes)
-y = label_binarize(y_test, classes=classes)
+x = label_binarize(predicted, classes=CLASS)
+y = label_binarize(test_label, classes=CLASS)
 draw_ROC_AUC(x, y, CLASS)
 
 ################################################################ SAVE
