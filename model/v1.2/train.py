@@ -16,15 +16,6 @@ import tensorflow.keras as k
 from tensorflow.python.keras.callbacks import EarlyStopping
 from tensorflow.python.ops.confusion_matrix import confusion_matrix
 
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-# from tensorflow import keras
-# import matplotlib.pyplot as plt
-# from jiwer import wer
-# from jiwer import cer
-# import json
-# import tensorflow_io as tfio
-
 ################################ DATA ################################
 
 DEBUG = 1
@@ -190,7 +181,6 @@ train_label, test_label = label[:split], label[split:]
 
 
 
-
 ################################ MODEL ################################
 
 ################################################################ BUILD
@@ -249,13 +239,13 @@ predicted = np.argmax(predict, axis=1)
 
 ################################################################ ACCURACY
 
-# ## CM
-# draw_CM(test_label, predicted)
-#
-# ## ROC, AUC
-# x = label_binarize(predicted, classes=classes)
-# y = label_binarize(y_test, classes=classes)
-# draw_ROC_AUC(x, y, CLASS)
+## CM
+draw_CM(test_label, predicted)
+
+## ROC, AUC
+x = label_binarize(predicted, classes=classes)
+y = label_binarize(y_test, classes=classes)
+draw_ROC_AUC(x, y, CLASS)
 
 ################################################################ SAVE
 
