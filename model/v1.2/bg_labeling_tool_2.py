@@ -34,7 +34,7 @@ bgq = []
 bgq_length = 30
 
 x1, y1, x2, y2 = 120, 70, 0, 70
-label = []
+circle = [[1,1]]
 
 df = pd.DataFrame()
 save_dir = f"out"
@@ -42,17 +42,6 @@ save_csv_path = f"{save_dir}/output.csv"
 data_dir = f"/media/z/0/MVPC10/DATA/v1.1/RAW/device_03"
 
 ################################################################ IMAGE FUNCTION
-
-def convert_to_format():
-    global dataset
-    dataset['count'] = dataset['count'].fillna(0)
-    df = pd.read_csv(file)
-    df1 = df.replace({'.png': '.jpg'}, regex=True)
-    df1 = df1.rename(columns={'img_name': 'rgb_name'})
-    df = df.drop(df.columns[1], axis=1)
-    dataset = pd.concat([df, df1], axis=1)
-    dataset["count"] = ""
-
 
 def drop_err(csv):
     img_list = glob(f"{save_dir}/*.png")
@@ -147,11 +136,23 @@ def bg_mkr(img):
         return 1, bg
 
 
-def process_image():
-    global base_name, df
+def convert_to_format():
+    global dataset
+    dataset['count'] = dataset['count'].fillna(0)
+    df = pd.read_csv(file)
+    df1 = df.replace({'.png': '.jpg'}, regex=True)
+    df1 = df1.rename(columns={'img_name': 'rgb_name'})
+    df = df.drop(df.columns[1], axis=1)
+    dataset = pd.concat([df, df1], axis=1)
+    dataset["count"] = ""
 
-    image1 = cv2.imread(rgb, 1)[:, :, ::-1]
+
+def process_image():
+    global base_name, df, img1, img2, resized_image1, resized_image2
+
+    image1 = cv2.imread(rgb, 1)
     image2 = cv2.imread(ir, 0)
+    image1 = image1[:, :, ::-1]
 
     if BG != 0:
         num, bg = bg_mkr(image2)
@@ -167,75 +168,44 @@ def process_image():
         df = pd.concat([df, new_row], axis=0, ignore_index=True, sort=False)
         bg.save(save_img_path)
 
-    crop_image(image1, 16, 38, 40, side=0)
-    crop_image(image2, 3.2, 7.6, 8, side=1)
-
     return num
 
 
-def crop_image(img, a, b, R, side):
-    global cropped_image1, cropped_image2
-    cropped_image = img
-    H, W = img.shape[0], img.shape[1]
-    X, Y = H//2, W
-
-    if side == 1:
-        for x in range(W):
-            for y in range(H):
-                if (((X-x)**2)/a**2)+(((Y-y)**2)/b**2) > R**2:
-                    cropped_image[y, x] = 0
-    cropped_image = cropped_image[:, W//5:W-W//5]
-    cropped_image = cropped_image[H//4:, :]
-
-    if side == 0:  cropped_image1 = cropped_image
-    elif side == 1:  cropped_image2 = cropped_image
-
-    resize_image(cropped_image, side)
-
-
-def resize_image(img, side):
-    global resized_image1, resized_image2
+def show_image(img1, img2):
+    img1_H, img1_W = image1.shape[0], image1.shape[1]
+    img2_H, img2_W = image2.shape[0], image2.shape[1]
+    img1 = crop_img(image1, img1_H, img1_W, img1_H//2, img1_W, 16, 38, 40, 0)
+    img2 = crop_img(image2, img2_H, img2_W, img2_H//2, img2_W, 3.2, 7.6, 8, 1)
 
     interpolation = cv2.INTER_NEAREST  ## CUBIC LINEAR AREA
-    resized_image = cv2.resize(img, (re_size1), interpolation=interpolation)
+    resized_image1 = cv2.resize(img1, (re_size1), interpolation=interpolation)
+    resized_image2 = cv2.resize(img2, (re_size2), interpolation=interpolation)
 
-    if side == 0:
-        resized_image1 = resized_image.copy()
-        draw_txt(resized_image, new_label, (resized_image.shape[0]-x1, y1), side=0)
-    elif side == 1:
-        resized_image2 = resized_image.copy()
-        draw_txt(resized_image, i, (x2, y2), side=1)
-
-
-def draw_txt(img, label, location, side):
-    new_cnt_img = cv2.putText(img, str(label), org=location, fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=3, color=(255, 0, 255), thickness=5, lineType=1)
-    show_image(new_cnt_img, side)
-
-
-def show_image(img, side):
-    image = ImageTk.PhotoImage(Image.fromarray(img))
     if AUTO_RUN == 0:
-        if side == 0:
-            LEFT_IMG.configure(image=image)
-            LEFT_IMG.image = image
-        if side == 1:
-            RIGHT_IMG.configure(image=image)
-            RIGHT_IMG.image = image
-
+        image111 = ImageTk.PhotoImage(Image.fromarray(img1))
+        image222 = ImageTk.PhotoImage(Image.fromarray(img2))
+        LEFT_IMG.configure(image=image111)
+        RIGHT_IMG.configure(image=image222)
+        LEFT_IMG.image111 = image111
+        RIGHT_IMG.image222 = image222
 
 def clear():
     count_text.set(0)
     index.delete(0, END)
     previous.delete(0, END)
 
+def circle(img, x, y, r=1):
+    new_img = cv2.circle(img, center=(x, y), radius=r, color=(255, 0, 0), thickness=1, lineType=1)
+    show_image(resized_image1, resized_image2)
+    return new_img
 
-def circle(img, r=1, side=1):
-    if len(label) > 0:
-        for i in label:
-            new_img = cv2.circle(img, center=(i[0], i[1]), radius=r, color=(255, 0, 0), thickness=1, lineType=1)
-    else:
-        show_image(img, side)
-    show_image(new_img, side)
+def uncircle():
+    pass
+
+def draw_txt(img, label, location):
+    new_txt = cv2.putText(img, str(label), org=location, fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=3, color=(255, 0, 255), thickness=5, lineType=1)
+    show_image(resized_image1, resized_image2)
+    return new_txt
 
 ################################################################ EVENT FUNCTION
 
@@ -278,10 +248,10 @@ def change(e, idx):
 
     if AUTO_RUN == 1:  next(e)
 
-# def detect_keypress(e):
-#     log(e.keysym, e.keysym == 'a')
-#     log(e.char)
-#     log(e)
+def detect_keypress(e):
+    log(e.keysym, e.keysym == 'a')
+    log(e.char)
+    log(e)
 
 def change_count(cnt):
     global new_label
@@ -345,7 +315,6 @@ def move(e):
     change(e, 0)
 
 def next(e):
-    label.clear()
     get_count()
     change(e, 1)
 
@@ -354,36 +323,27 @@ def prev(e):
     change(e, -1)
 
 def increase(e):
+    global resized_image1
     change_count(1)
-    img = resized_image1.copy()
-    draw_txt(img, new_label, (img.shape[0]-x1, y1), side=0)
+    resized_image1 = draw_txt(img1, new_label, (resized_image1.shape[0]-x1, y1))
 
 def decrease(e):
+    global resized_image1
     change_count(-1)
-    img = resized_image1.copy()
-    draw_txt(img, new_label, (img.shape[0]-x1, y1), side=0)
+    resized_image1 = draw_txt(img1, new_label, (resized_image1.shape[0]-x1, y1))
 
-def draw1(e):
+def draw_circle(e):
+    global img2
     x, y = get_mouse_xy(e)
-    label.append([x, y])
-    img = resized_image2.copy()
-    circle(img, size, side=1)
+    img2 = circle(resized_image2, x-1, y, size)
 
-def draw2(e):
+def remove_circle(e):
+    global img2
     x, y = get_mouse_xy(e)
-    label.append([x, y])
-    img = resized_image1.copy()
-    circle(img, size, side=0)
+    img2 = uncircle(resized_image2, x, y)
 
-def erase(e):
-    label.pop(-1)
-    img1 = resized_image1.copy()
-    img2 = resized_image2.copy()
-    circle(img1, size, side=0)
-    circle(img2, size, side=1)
-
-def close(e):
-    # df.to_csv(save_csv_path, index=False)
+def close_win(e):
+    df.to_csv(save_csv_path, index=False)
     win.destroy()
 
 ################################################################ WINDOW
@@ -453,11 +413,10 @@ win.bind('<Left>', prev)
 win.bind('<Up>', increase)
 win.bind('<Down>', decrease)
 
-win.bind('<Escape>', close)
+win.bind('<Escape>', close_win)
 
-win.bind("<Button 1>", draw1)
-win.bind("<Button 2>", erase)
-win.bind("<Button 3>", draw2)
+win.bind("<Button 1>", draw_circle)
+win.bind("<Button 3>", remove_circle)
 
 ################################################################ CONFIG
 
