@@ -31,6 +31,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/model/v1.2/csv/refined/refined_concat.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/model/v1.2/label_1765.csv">
           <value>
             <Attribute>
