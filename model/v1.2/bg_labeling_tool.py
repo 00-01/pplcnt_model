@@ -1,5 +1,5 @@
 ## pyinstaller -F -w bg_labeling_tool1.py
-import binascii
+# import binascii
 from glob import glob
 import os
 from tkinter import *
@@ -17,6 +17,7 @@ DEBUG = 1
 BG = 2
 SAVE_IMG = 0
 AUTO_RUN = 0
+SORT = 1
 # DRAW_CNT = 1
 
 h, w = 80, 80
@@ -35,6 +36,7 @@ bgq_length = 30
 
 x1, y1, x2, y2 = 120, 70, 0, 70
 label = []
+new_img = None
 
 df = pd.DataFrame()
 save_dir = f"out"
@@ -147,30 +149,33 @@ def bg_mkr(img):
         return 1, bg
 
 
-def process_image():
+def open_new_img():
     global base_name, df
 
     image1 = cv2.imread(rgb, 1)[:, :, ::-1]
     image2 = cv2.imread(ir, 0)
 
     if BG != 0:
-        num, bg = bg_mkr(image2)
-        if BG == 1:  image1 = bg
-        elif BG == 2:  image2 = bg
+        try:
+            num, bg = bg_mkr(image2)
+            if BG == 1:  image1 = bg
+            elif BG == 2:  image2 = bg
+            if SAVE_IMG == 1:
+                base_name = os.path.basename(ir)
+                save_img_path = f"{save_dir}/{base_name}"
+                # new_row = {'img': base_name, 'cnt': auto_cnt}
+                # df = df.append(new_row, ignore_index=True)
+                new_row = pd.DataFrame({'img': [base_name], 'cnt': [auto_cnt]})
+                df = pd.concat([df, new_row], axis=0, ignore_index=True, sort=False)
+                bg.save(save_img_path)
 
-    if SAVE_IMG == 1:
-        base_name = os.path.basename(ir)
-        save_img_path = f"{save_dir}/{base_name}"
-        # new_row = {'img': base_name, 'cnt': auto_cnt}
-        # df = df.append(new_row, ignore_index=True)
-        new_row = pd.DataFrame({'img':[base_name], 'cnt':[auto_cnt]})
-        df = pd.concat([df, new_row], axis=0, ignore_index=True, sort=False)
-        bg.save(save_img_path)
+            crop_image(image1, 16, 38, 40, side=-1)
+            crop_image(image2, 3.2, 7.6, 8, side=1)
 
-    crop_image(image1, 16, 38, 40, side=0)
-    crop_image(image2, 3.2, 7.6, 8, side=1)
+            return num
 
-    return num
+        except TypeError as TE:
+            print(TE)
 
 
 def crop_image(img, a, b, R, side):
@@ -187,8 +192,8 @@ def crop_image(img, a, b, R, side):
     cropped_image = cropped_image[:, W//5:W-W//5]
     cropped_image = cropped_image[H//4:, :]
 
-    if side == 0:  cropped_image1 = cropped_image
-    elif side == 1:  cropped_image2 = cropped_image
+    if side < 1:  cropped_image1 = cropped_image.copy()
+    elif side == 1:  cropped_image2 = cropped_image.copy()
 
     resize_image(cropped_image, side)
 
@@ -199,23 +204,40 @@ def resize_image(img, side):
     interpolation = cv2.INTER_NEAREST  ## CUBIC LINEAR AREA
     resized_image = cv2.resize(img, (re_size1), interpolation=interpolation)
 
+    if side == -1:
+        resized_image1 = resized_image.copy()
+        draw_txt(resized_image, cnt, side)
     if side == 0:
         resized_image1 = resized_image.copy()
-        draw_txt(resized_image, new_label, (resized_image.shape[0]-x1, y1), side=0)
+        draw_txt(resized_image, new_label, side)
     elif side == 1:
         resized_image2 = resized_image.copy()
-        draw_txt(resized_image, i, (x2, y2), side=1)
+        draw_txt(resized_image, i, side)
 
 
-def draw_txt(img, label, location, side):
-    new_cnt_img = cv2.putText(img, str(label), org=location, fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=3, color=(255, 0, 255), thickness=5, lineType=1)
+def draw_txt(img, label, side, circle=0):
+    if side < 1:
+        new_cnt_img = cv2.putText(img, str(label), org=(img.shape[0]-x1, y1), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=3, color= (255, 0, 255), thickness= 5, lineType=1)
+        if circle == 1:  draw_circle(new_cnt_img, size, side)
+    elif side == 1:
+        new_cnt_img = cv2.putText(img, str(label), org=(x2, y2), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=3, color=(255, 0, 255), thickness=5, lineType=1)
+        if circle == 1:  draw_circle(new_cnt_img, size, side)
     show_image(new_cnt_img, side)
+
+
+def draw_circle(img, r=1, side=1):
+    if len(label) > 0:
+        for i in label:
+            new_img = cv2.circle(img, center=(i[0], i[1]), radius=r, color=(255, 0, 0), thickness=1, lineType=1)
+            show_image(new_img, side)
+    else:
+        show_image(img, side)
 
 
 def show_image(img, side):
     image = ImageTk.PhotoImage(Image.fromarray(img))
     if AUTO_RUN == 0:
-        if side == 0:
+        if side < 1:
             LEFT_IMG.configure(image=image)
             LEFT_IMG.image = image
         if side == 1:
@@ -227,15 +249,6 @@ def clear():
     count_text.set(0)
     index.delete(0, END)
     previous.delete(0, END)
-
-
-def circle(img, r=1, side=1):
-    if len(label) > 0:
-        for i in label:
-            new_img = cv2.circle(img, center=(i[0], i[1]), radius=r, color=(255, 0, 0), thickness=1, lineType=1)
-    else:
-        show_image(img, side)
-    show_image(new_img, side)
 
 ################################################################ EVENT FUNCTION
 
@@ -256,7 +269,7 @@ def change(e, idx):
     image2_text.set(f"{ir}")
 
     try:
-        if process_image():
+        if open_new_img():
             index.insert(0, i)
         else:
             cnt = -1
@@ -300,22 +313,21 @@ def get_mouse_xy(e):
 
 ################################################################ EVENT
 
-def open_bin():
-    with open(ir, 'rb') as file:
-        byte = binascii.hexlify(file.read(1))
-        byte = binascii.hexlify(file.read(1))+byte
-        i = 0
-        while byte:
-            cell = int(byte, 16)
-            # offset[i] = cell
-            if i not in mins or mins[i] > cell:
-                mins[i] = cell
-            if i not in maxs or maxs[i] < cell:
-                maxs[i] = cell
-            i += 1
-            byte = binascii.hexlify(file.read(1))
-            byte = binascii.hexlify(file.read(1))+byte
-
+# def open_bin():
+#     with open(ir, 'rb') as file:
+#         byte = binascii.hexlify(file.read(1))
+#         byte = binascii.hexlify(file.read(1))+byte
+#         i = 0
+#         while byte:
+#             cell = int(byte, 16)
+#             # offset[i] = cell
+#             if i not in mins or mins[i] > cell:
+#                 mins[i] = cell
+#             if i not in maxs or maxs[i] < cell:
+#                 maxs[i] = cell
+#             i += 1
+#             byte = binascii.hexlify(file.read(1))
+#             byte = binascii.hexlify(file.read(1))+byte
 
 def open_foler():
     global dataset
@@ -333,6 +345,9 @@ def open_csv():
     file = filedialog.askopenfile()
     win.title(f"{file.name}")
     dataset = pd.read_csv(file)
+    dataset.sort_values(by=dataset.iloc[0,2], inplace=True, ascending=True)
+
+    if SORT == 1:  dataset = sorted(dataset)
     # convert_to_format()
 
 def save():
@@ -355,32 +370,35 @@ def prev(e):
 
 def increase(e):
     change_count(1)
-    img = resized_image1.copy()
-    draw_txt(img, new_label, (img.shape[0]-x1, y1), side=0)
+    new_img = resized_image1.copy()
+    draw_txt(new_img, new_label, side=0)
 
 def decrease(e):
     change_count(-1)
-    img = resized_image1.copy()
-    draw_txt(img, new_label, (img.shape[0]-x1, y1), side=0)
+    new_img = resized_image1.copy()
+    draw_txt(new_img, new_label, side=0)
 
 def draw1(e):
     x, y = get_mouse_xy(e)
     label.append([x, y])
-    img = resized_image2.copy()
-    circle(img, size, side=1)
+    try:
+        img = resized_image2.copy()
+        draw_txt(img, i, side=1, circle=1)
+    except NameError as NE:
+        log(NE)
 
 def draw2(e):
     x, y = get_mouse_xy(e)
     label.append([x, y])
     img = resized_image1.copy()
-    circle(img, size, side=0)
+    draw_txt(img, new_label, side=0, circle=1)
 
 def erase(e):
     label.pop(-1)
     img1 = resized_image1.copy()
     img2 = resized_image2.copy()
-    circle(img1, size, side=0)
-    circle(img2, size, side=1)
+    draw_circle(img1, size, side=0)
+    draw_circle(img2, size, side=1)
 
 def close(e):
     # df.to_csv(save_csv_path, index=False)
@@ -418,7 +436,7 @@ previous = Entry(win, width=10, justify='center', borderwidth=3, bg="white")
 
 open_csv_button = Button(select_frame, text="select csv_file", command=open_csv)
 open_folder_button = Button(select_frame, text="select folder", command=open_foler)
-open_bin_button = Button(select_frame, text="select bin_file", command=open_bin)
+# open_bin_button = Button(select_frame, text="select bin_file", command=open_bin)
 
 save = Button(win, text="Save", bg='red', fg='blue', padx=10, pady=10, command=save)
 
@@ -439,7 +457,7 @@ previous.grid(row=3, column=1)
 select_frame.grid(row=4, column=0)
 open_csv_button.grid(row=0, column=1)
 open_folder_button.grid(row=0, column=2)
-open_bin_button.grid(row=0, column=3)
+# open_bin_button.grid(row=0, column=3)
 
 save.grid(row=4, column=1)
 

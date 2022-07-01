@@ -31,14 +31,28 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/model/v1.2/v1.2_label_12.csv">
+        <entry key="/model/v1.2/label_1765.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/model/v1.2/v1.2_train.csv">
+        <entry key="/model/v1.2/label_1768.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/out/output(err_dropped).csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/model/v1.2/out/output.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

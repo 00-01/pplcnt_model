@@ -37,7 +37,7 @@ x1, y1, x2, y2 = 120, 70, 0, 70
 circle = [[1,1]]
 
 df = pd.DataFrame()
-save_dir = f"out"
+save_dir = f"../model/v1.2/out"
 save_csv_path = f"{save_dir}/output.csv"
 data_dir = f"/media/z/0/MVPC10/DATA/v1.1/RAW/device_03"
 
