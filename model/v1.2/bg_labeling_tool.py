@@ -17,7 +17,6 @@ DEBUG = 1
 BG = 2
 SAVE_IMG = 0
 AUTO_RUN = 0
-SORT = 1
 # DRAW_CNT = 1
 
 h, w = 80, 80
@@ -173,7 +172,6 @@ def open_new_img():
             crop_image(image2, 3.2, 7.6, 8, side=1)
 
             return num
-
         except TypeError as TE:
             print(TE)
 
@@ -345,9 +343,7 @@ def open_csv():
     file = filedialog.askopenfile()
     win.title(f"{file.name}")
     dataset = pd.read_csv(file)
-    dataset.sort_values(by=dataset.iloc[0,2], inplace=True, ascending=True)
-
-    if SORT == 1:  dataset = sorted(dataset)
+    dataset.sort_values(by=dataset.keys()[0], inplace=True, ascending=True)
     # convert_to_format()
 
 def save():
@@ -408,10 +404,10 @@ def close(e):
 
 win = Tk()
 win.title(f"labeler")
-if BG == 1:  win.geometry("1924x1200")
-else:  win.geometry("1604x1000")
+if BG == 1:  win.geometry('1924x1200')
+else:  win.geometry('1604x1000')
 
-select_frame = Frame(win, width=0, height=0, bg="white")
+select_frame = Frame(win, width=0, height=0, bg='white')
 # select_frame.grid_propagate(False)
 
 ################################################################ TEXT
@@ -430,8 +426,8 @@ RIGHT_IMG = Label(win)
 label2 = Label(win, text="previous: ", padx=20, pady=10)
 count = Label(win, textvariable=count_text)
 
-index = Entry(win, width=10, justify='center', borderwidth=3, bg="yellow")
-previous = Entry(win, width=10, justify='center', borderwidth=3, bg="white")
+index = Entry(win, width=10, justify='center', borderwidth=3, bg='yellow')
+previous = Entry(win, width=10, justify='center', borderwidth=3, bg='white')
 # previous = Label(win, textvariable=count_text)
 
 open_csv_button = Button(select_frame, text="select csv_file", command=open_csv)
@@ -473,9 +469,9 @@ win.bind('<Down>', decrease)
 
 win.bind('<Escape>', close)
 
-win.bind("<Button 1>", draw1)
-win.bind("<Button 2>", erase)
-win.bind("<Button 3>", draw2)
+win.bind('<Button 1>', draw1)
+win.bind('<Button 2>', erase)
+win.bind('<Button 3>', draw2)
 
 ################################################################ CONFIG
 

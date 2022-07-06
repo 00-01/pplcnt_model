@@ -3,13 +3,6 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="/helper/input/output.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="/in/_annotations.csv">
           <value>
             <Attribute>
@@ -46,20 +39,6 @@
           </value>
         </entry>
         <entry key="/model/v1.2/label_1768.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="/model/v1.2/out/output(err_dropped).csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="/model/v1.2/out/output.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
